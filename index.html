@@ -633,6 +633,7 @@ input[type=file]{display:none;}
     <button class="nav-tab" onclick="switchNav(this,'history')">🗂 History</button>
   </div>
   <div class="nav-right">
+    <button onclick="showKeyModal()" style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);color:var(--neon2);padding:5px 14px;border-radius:20px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:1px;" id="keyBtn">🔑 SET API KEY</button>
     <div class="live-badge"><div class="pulse-dot"></div>5 AGENTS LIVE</div>
   </div>
 </nav>
@@ -1086,69 +1087,37 @@ function feed(agent, msg) {
 }
 
 // ══════════════════════════════════════
-// CLAUDE API
+// CLAUDE API — CORS-SAFE (GitHub Pages compatible)
 // ══════════════════════════════════════
-async function callClaude(system, user) {
-  await new Promise(r => setTimeout(r, 800)); // simulate AI delay
-
-  if (system.includes("NLP extraction")) {
-    return JSON.stringify({
-      meeting_meta: {
-        title: "P0 Incident Standup",
-        date: "March 29",
-        duration_est: "45 min",
-        meeting_type: "crisis",
-        attendees: ["Arjun", "Sneha", "Dev", "Pooja", "Rahul"]
-      },
-      decisions: [
-        { decision: "Fix failover config immediately", made_by: "Arjun", impact: "high" }
-      ],
-      action_items: [
-        { task: "Review failover config", owner: "Dev", deadline: "Wednesday", priority: "high", category: "engineering" },
-        { task: "Prepare SLA response", owner: "Rahul", deadline: "EOD", priority: "high", category: "ops" }
-      ],
-      blockers: [],
-      risks: [
-        { risk: "Repeat outage risk", severity: "high", probability: 85 }
-      ],
-      sentiment: { overall: "urgent", energy_level: "high" }
-    });
-  }
-
-  if (system.includes("workflow orchestration")) {
-    return JSON.stringify({
-      execution_order: [
-        { step: 1, task: "Fix failover config", owner: "Dev", priority_score: 95 },
-        { step: 2, task: "Prepare SLA response", owner: "Rahul", priority_score: 90 }
-      ],
-      conflicts: [],
-      auto_escalations: [
-        { task: "Fix failover config", escalate_after: "8h", escalate_to: "CTO" }
-      ]
-    });
-  }
-
-  if (system.includes("communications agent")) {
-    return JSON.stringify({
-      emails: [
-        {
-          to: "Dev",
-          subject: "Urgent: Fix Failover Config",
-          body: "Please prioritize fixing the failover configuration immediately."
-        }
-      ],
-      tickets: [
-        {
-          title: "Fix failover system",
-          priority: "high"
-        }
-      ]
-    });
-  }
-
-  return JSON.stringify({});
+function getApiKey() {
+  return localStorage.getItem('mm_api_key') || '';
 }
-   
+
+async function callClaude(system, user) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    document.getElementById('keyModal').style.display = 'flex';
+    throw new Error('No API key — enter your Anthropic key in the modal that just opened.');
+  }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system,
+      messages: [{ role: 'user', content: user }]
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.content.map(b => b.text || '').join('');
+}
 
 function parseJSON(raw, fallback) {
   try { return JSON.parse(raw.replace(/```json|```/g,'').trim()); }
@@ -1671,5 +1640,53 @@ function toast(msg) {
 // Boot
 init();
 </script>
+
+<!-- ════ API KEY MODAL ════ -->
+<div id="keyModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(12px);z-index:9999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#111827;border:1px solid #1f2d45;border-radius:16px;padding:36px;max-width:500px;width:90%;box-shadow:0 24px 64px rgba(0,0,0,0.5);">
+    <div style="font-size:22px;font-weight:700;margin-bottom:8px;color:#e2e8f0;">🔑 Add Your Anthropic API Key</div>
+    <p style="font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:20px;">MeetMind calls the Claude API directly from your browser. Your key is stored only in <code style="background:#1a2236;padding:2px 6px;border-radius:4px;font-size:12px;">localStorage</code> — never sent anywhere else.</p>
+    <div style="margin-bottom:8px;font-size:11px;color:#4a6080;font-family:'DM Mono',monospace;letter-spacing:0.5px;">ANTHROPIC API KEY</div>
+    <input id="apiKeyInput" type="password" placeholder="sk-ant-..." style="width:100%;background:#1a2236;border:1px solid #243352;border-radius:8px;color:#e2e8f0;font-family:'DM Mono',monospace;font-size:13px;padding:12px 14px;outline:none;margin-bottom:16px;" oninput="this.style.borderColor=this.value.startsWith('sk-ant') ? '#34d399' : '#f43f5e'">
+    <div style="display:flex;gap:10px;">
+      <button onclick="saveKey()" style="flex:1;padding:12px;background:linear-gradient(135deg,#00e5ff,#a78bfa);border:none;border-radius:8px;color:#000;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;cursor:pointer;">✅ Save & Continue</button>
+      <button onclick="document.getElementById('keyModal').style.display='none'" style="padding:12px 20px;background:transparent;border:1px solid #1f2d45;border-radius:8px;color:#94a3b8;font-family:'Space Grotesk',sans-serif;font-size:14px;cursor:pointer;">Cancel</button>
+    </div>
+    <p style="font-size:11px;color:#4a6080;margin-top:16px;font-family:'DM Mono',monospace;">Get your key at: <span style="color:#00e5ff;">console.anthropic.com</span> → API Keys</p>
+    <p style="font-size:11px;color:#4a6080;margin-top:4px;font-family:'DM Mono',monospace;">⚠ For demo/hackathon use only. Do not use production keys in public deployments.</p>
+  </div>
+</div>
+
+<script>
+function showKeyModal() {
+  document.getElementById('keyModal').style.display = 'flex';
+  const existing = localStorage.getItem('mm_api_key');
+  if (existing) document.getElementById('apiKeyInput').value = existing;
+}
+
+function saveKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) { return; }
+  localStorage.setItem('mm_api_key', key);
+  document.getElementById('keyModal').style.display = 'none';
+  document.getElementById('keyBtn').textContent = '🔑 KEY SET ✓';
+  document.getElementById('keyBtn').style.color = 'var(--neon3)';
+  document.getElementById('keyBtn').style.borderColor = 'rgba(52,211,153,0.3)';
+}
+
+// On load: if key exists, hide modal and update button; else show modal
+window.addEventListener('load', () => {
+  const existing = localStorage.getItem('mm_api_key');
+  if (existing) {
+    document.getElementById('keyModal').style.display = 'none';
+    document.getElementById('keyBtn').textContent = '🔑 KEY SET ✓';
+    document.getElementById('keyBtn').style.color = 'var(--neon3)';
+    document.getElementById('keyBtn').style.borderColor = 'rgba(52,211,153,0.3)';
+  }
+  // pre-fill if already entered
+  document.getElementById('apiKeyInput').value = existing || '';
+});
+</script>
+
 </body>
 </html>
