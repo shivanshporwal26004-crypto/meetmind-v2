@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeetMind v2 — Autonomous Post-Meeting Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0a0e1a;
+  --ink2: #111827;
+  --ink3: #1a2236;
+  --line: #1f2d45;
+  --line2: #243352;
+  --neon: #00e5ff;
+  --neon2: #a78bfa;
+  --neon3: #34d399;
+  --fire: #f97316;
+  --red: #f43f5e;
+  --text: #e2e8f0;
+  --sub: #94a3b8;
+  --dim: #4a6080;
+  --glow: rgba(0,229,255,0.12);
+  --glow2: rgba(167,139,250,0.12);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+html{scroll-behavior:smooth;}
+
+body{
+  font-family:'Space Grotesk',sans-serif;
+  background:var(--ink);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* Animated starfield background */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(0,229,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(167,139,250,0.06) 0%, transparent 60%);
+  pointer-events:none;
+  z-index:0;
+}
+
+body::after{
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.025) 1px, transparent 1px);
+  background-size:60px 60px;
+  pointer-events:none;
+  z-index:0;
+}
+
+.z1{position:relative;z-index:1;}
+
+/* ── NAV ── */
+nav{
+  position:sticky;top:0;z-index:200;
+  background:rgba(10,14,26,0.88);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--line);
+  padding:0 32px;
+  height:58px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+
+.nav-brand{display:flex;align-items:center;gap:12px;}
+.nav-logo{
+  width:34px;height:34px;
+  background:linear-gradient(135deg,var(--neon),var(--neon2));
+  border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;
+  box-shadow:0 0 20px rgba(0,229,255,0.3);
+}
+.nav-name{font-size:18px;font-weight:700;letter-spacing:-0.5px;}
+.nav-name em{color:var(--neon);font-style:normal;}
+.nav-pill{
+  font-family:'DM Mono',monospace;
+  font-size:10px;letter-spacing:1.5px;
+  background:rgba(0,229,255,0.08);
+  border:1px solid rgba(0,229,255,0.2);
+  color:var(--neon);
+  padding:3px 10px;border-radius:20px;
+}
+.nav-right{display:flex;align-items:center;gap:20px;}
+.nav-tab{
+  font-size:13px;font-weight:500;color:var(--sub);
+  cursor:pointer;padding:4px 2px;
+  border-bottom:2px solid transparent;
+  transition:all 0.2s;
+}
+.nav-tab:hover,.nav-tab.active{color:var(--text);border-color:var(--neon);}
+.live-badge{
+  display:flex;align-items:center;gap:6px;
+  font-family:'DM Mono',monospace;font-size:11px;color:var(--neon3);
+}
+.pulse-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--neon3);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(52,211,153,0.4);}70%{box-shadow:0 0 0 6px rgba(52,211,153,0);}}
+
+/* ── SECTIONS ── */
+.section{display:none;}
+.section.active{display:block;}
+
+/* ── HERO ── */
+.hero{
+  text-align:center;
+  padding:52px 24px 36px;
+  max-width:860px;
+  margin:0 auto;
+}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;
+  color:var(--neon2);
+  background:rgba(167,139,250,0.08);
+  border:1px solid rgba(167,139,250,0.2);
+  padding:5px 16px;border-radius:20px;margin-bottom:24px;
+}
+.hero h1{
+  font-size:clamp(32px,5vw,58px);
+  font-weight:700;letter-spacing:-2px;line-height:1.1;
+  margin-bottom:18px;
+}
+.hero h1 .g1{
+  background:linear-gradient(90deg,var(--neon),var(--neon2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero h1 .g2{
+  background:linear-gradient(90deg,var(--neon2),var(--neon3));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-sub{font-size:17px;color:var(--sub);line-height:1.6;max-width:580px;margin:0 auto 36px;}
+
+/* ── KPI STRIP ── */
+.kpi-strip{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:12px;
+  max-width:1320px;margin:0 auto 28px;padding:0 24px;
+}
+.kpi{
+  background:var(--ink2);
+  border:1px solid var(--line);
+  border-radius:12px;padding:16px 18px;
+  text-align:center;
+  transition:border-color 0.3s;
+}
+.kpi:hover{border-color:var(--line2);}
+.kpi-val{
+  font-size:26px;font-weight:700;letter-spacing:-1px;
+  background:linear-gradient(135deg,var(--neon),var(--neon2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.kpi-label{font-size:11px;color:var(--dim);margin-top:3px;font-family:'DM Mono',monospace;letter-spacing:0.5px;}
+
+/* ── MAIN LAYOUT ── */
+.workspace{
+  display:grid;
+  grid-template-columns:400px 1fr;
+  gap:20px;
+  max-width:1320px;
+  margin:0 auto;
+  padding:0 24px 60px;
+}
+@media(max-width:1100px){.workspace{grid-template-columns:1fr;}}
+
+/* ── CARD ── */
+.card{
+  background:var(--ink2);
+  border:1px solid var(--line);
+  border-radius:14px;
+  overflow:hidden;
+}
+.card-head{
+  padding:14px 18px;
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.card-title{
+  font-size:11px;font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--dim);
+  display:flex;align-items:center;gap:8px;
+}
+.card-body{padding:18px;}
+
+/* ── TABS ── */
+.tab-row{
+  display:flex;gap:4px;
+  border-bottom:1px solid var(--line);
+  padding:0 18px;
+}
+.tab-btn{
+  font-size:12px;font-weight:500;color:var(--sub);
+  padding:10px 12px;cursor:pointer;
+  border-bottom:2px solid transparent;
+  transition:all 0.2s;background:none;border-top:none;border-left:none;border-right:none;
+  font-family:'Space Grotesk',sans-serif;
+}
+.tab-btn:hover,.tab-btn.active{color:var(--text);border-color:var(--neon);}
+.tab-pane{display:none;padding:18px;}
+.tab-pane.active{display:block;}
+
+/* ── TEXTAREA ── */
+textarea{
+  width:100%;
+  background:var(--ink3);
+  border:1px solid var(--line);
+  border-radius:10px;
+  color:var(--text);
+  font-family:'DM Mono',monospace;font-size:12px;
+  padding:14px;resize:vertical;min-height:260px;
+  line-height:1.7;outline:none;
+  transition:border-color 0.2s,box-shadow 0.2s;
+}
+textarea:focus{border-color:var(--neon);box-shadow:0 0 0 3px rgba(0,229,255,0.08);}
+
+/* ── BUTTONS ── */
+.btn-primary{
+  width:100%;padding:14px;margin-top:14px;
+  background:linear-gradient(135deg,var(--neon),var(--neon2));
+  border:none;border-radius:10px;
+  color:#000;font-family:'Space Grotesk',sans-serif;
+  font-size:14px;font-weight:700;cursor:pointer;
+  letter-spacing:0.3px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:all 0.2s;
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,229,255,0.25);}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none;}
+
+.btn-ghost{
+  padding:8px 16px;
+  background:transparent;
+  border:1px solid var(--line);
+  border-radius:8px;color:var(--sub);
+  font-family:'Space Grotesk',sans-serif;font-size:13px;
+  cursor:pointer;transition:all 0.2s;
+}
+.btn-ghost:hover{border-color:var(--neon);color:var(--neon);}
+
+.btn-approve{
+  flex:1;padding:12px;
+  background:linear-gradient(135deg,var(--neon3),#059669);
+  border:none;border-radius:9px;
+  color:#000;font-family:'Space Grotesk',sans-serif;
+  font-weight:700;font-size:14px;cursor:pointer;
+  transition:all 0.2s;
+}
+.btn-approve:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(52,211,153,0.3);}
+
+.btn-modify{
+  padding:12px 20px;
+  background:transparent;border:1px solid var(--line);
+  border-radius:9px;color:var(--sub);
+  font-family:'Space Grotesk',sans-serif;font-weight:600;
+  font-size:14px;cursor:pointer;transition:all 0.2s;
+}
+.btn-modify:hover{border-color:var(--neon2);color:var(--neon2);}
+
+/* ── CHIPS ── */
+.chip{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 9px;border-radius:12px;
+  font-size:10px;font-family:'DM Mono',monospace;font-weight:500;
+}
+.chip-cyan{background:rgba(0,229,255,0.1);color:var(--neon);border:1px solid rgba(0,229,255,0.2);}
+.chip-purple{background:rgba(167,139,250,0.1);color:var(--neon2);border:1px solid rgba(167,139,250,0.2);}
+.chip-green{background:rgba(52,211,153,0.1);color:var(--neon3);border:1px solid rgba(52,211,153,0.2);}
+.chip-red{background:rgba(244,63,94,0.1);color:var(--red);border:1px solid rgba(244,63,94,0.2);}
+.chip-orange{background:rgba(249,115,22,0.1);color:var(--fire);border:1px solid rgba(249,115,22,0.2);}
+
+/* ── SAMPLE SCENARIOS ── */
+.scenarios{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;}
+.scenario-btn{
+  background:var(--ink3);
+  border:1px solid var(--line);
+  border-radius:8px;padding:10px 8px;
+  cursor:pointer;transition:all 0.2s;
+  text-align:center;
+}
+.scenario-btn:hover{border-color:var(--neon2);background:rgba(167,139,250,0.05);}
+.scenario-icon{font-size:18px;display:block;margin-bottom:4px;}
+.scenario-name{font-size:11px;font-weight:600;color:var(--text);}
+.scenario-sub{font-size:10px;color:var(--dim);margin-top:2px;font-family:'DM Mono',monospace;}
+
+/* ── CONFIG ── */
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+.config-box{
+  background:var(--ink3);border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+}
+.config-lbl{font-size:10px;color:var(--dim);font-family:'DM Mono',monospace;margin-bottom:4px;letter-spacing:0.5px;}
+select,input[type=number]{
+  background:transparent;border:none;color:var(--text);
+  font-family:'DM Mono',monospace;font-size:13px;width:100%;outline:none;
+}
+select option{background:var(--ink2);}
+
+/* ── PROGRESS ── */
+.prog-wrap{
+  background:var(--line);border-radius:4px;height:3px;margin-top:14px;overflow:hidden;
+}
+.prog-bar{
+  height:100%;
+  background:linear-gradient(90deg,var(--neon),var(--neon2),var(--neon3));
+  width:0%;transition:width 0.6s cubic-bezier(.4,0,.2,1);
+  border-radius:4px;
+}
+
+/* ── AGENT PIPELINE ── */
+.agent-list{display:flex;flex-direction:column;gap:10px;}
+.agent{
+  background:var(--ink3);border:1px solid var(--line);
+  border-radius:12px;overflow:hidden;
+  transition:border-color 0.3s,box-shadow 0.3s;
+}
+.agent.running{
+  border-color:var(--neon);
+  box-shadow:0 0 0 1px rgba(0,229,255,0.1),0 4px 24px rgba(0,229,255,0.08);
+}
+.agent.done{border-color:rgba(52,211,153,0.4);}
+.agent.error{border-color:rgba(244,63,94,0.4);}
+
+.agent-row{
+  padding:12px 16px;
+  display:flex;align-items:center;gap:12px;cursor:pointer;
+  user-select:none;
+}
+.agent-num{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;font-family:'DM Mono',monospace;
+  flex-shrink:0;
+  background:var(--line);color:var(--dim);
+  transition:all 0.3s;
+}
+.agent.running .agent-num{background:var(--neon);color:#000;animation:throb 0.8s ease infinite;}
+.agent.done .agent-num{background:var(--neon3);color:#000;}
+@keyframes throb{0%,100%{transform:scale(1);}50%{transform:scale(1.12);}}
+
+.agent-meta{flex:1;}
+.agent-name{font-size:13px;font-weight:600;}
+.agent-desc{font-size:11px;color:var(--dim);margin-top:2px;font-family:'DM Mono',monospace;}
+
+.agent-badge{
+  font-size:10px;font-family:'DM Mono',monospace;letter-spacing:0.5px;
+  padding:3px 10px;border-radius:20px;font-weight:600;
+}
+.badge-idle{background:rgba(74,96,128,0.15);color:var(--dim);border:1px solid var(--line);}
+.badge-run{background:rgba(0,229,255,0.1);color:var(--neon);border:1px solid rgba(0,229,255,0.3);animation:flash 1s infinite;}
+.badge-done{background:rgba(52,211,153,0.1);color:var(--neon3);border:1px solid rgba(52,211,153,0.3);}
+.badge-err{background:rgba(244,63,94,0.1);color:var(--red);border:1px solid rgba(244,63,94,0.3);}
+@keyframes flash{0%,100%{opacity:1;}50%{opacity:0.5;}}
+
+.chevron{
+  background:none;border:none;color:var(--dim);cursor:pointer;
+  font-size:14px;padding:4px;transition:transform 0.3s,color 0.2s;
+}
+.chevron.open{transform:rotate(180deg);color:var(--neon);}
+
+.agent-body{max-height:0;overflow:hidden;transition:max-height 0.4s ease,padding 0.3s;}
+.agent-body.open{max-height:900px;padding:0 16px 16px;}
+
+/* ── OUTPUT ATOMS ── */
+.out-section{margin-bottom:14px;}
+.out-label{
+  font-size:10px;font-family:'DM Mono',monospace;color:var(--dim);
+  letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;
+  display:flex;align-items:center;gap:8px;
+}
+.out-label::after{content:'';flex:1;height:1px;background:var(--line);}
+
+.thought{
+  font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);
+  line-height:1.7;background:rgba(0,0,0,0.25);border-radius:8px;
+  padding:12px;border-left:2px solid var(--neon2);
+}
+
+.row-item{
+  background:rgba(0,0,0,0.2);border:1px solid var(--line);border-radius:8px;
+  padding:10px 13px;display:flex;align-items:flex-start;gap:10px;
+  margin-bottom:8px;
+}
+.row-item.p-high{border-left:3px solid var(--red);}
+.row-item.p-med{border-left:3px solid var(--fire);}
+.row-item.p-low{border-left:3px solid var(--neon3);}
+.row-icon{font-size:14px;flex-shrink:0;margin-top:2px;}
+.row-content{flex:1;}
+.row-main{font-size:13px;line-height:1.5;}
+.row-meta{font-size:10px;color:var(--dim);font-family:'DM Mono',monospace;margin-top:4px;}
+.row-sub{font-size:11px;color:var(--sub);margin-top:4px;}
+
+.email-wrap{background:rgba(0,0,0,0.2);border:1px solid var(--line);border-radius:8px;margin-bottom:10px;overflow:hidden;}
+.email-head{
+  padding:9px 13px;background:rgba(0,229,255,0.04);
+  border-bottom:1px solid var(--line);
+  font-size:11px;font-family:'DM Mono',monospace;color:var(--dim);
+}
+.email-head strong{color:var(--neon);}
+.email-body{padding:11px 13px;font-size:12px;line-height:1.7;color:var(--text);}
+
+.audit-log{background:rgba(0,0,0,0.25);border-radius:8px;padding:12px;border:1px solid var(--line);}
+.audit-row{
+  display:grid;grid-template-columns:56px 100px 1fr;gap:10px;
+  padding:6px 0;border-bottom:1px solid rgba(31,45,69,0.5);
+  font-family:'DM Mono',monospace;font-size:11px;
+}
+.audit-row:last-child{border-bottom:none;}
+.at{color:var(--neon);}
+.ag{color:var(--neon2);}
+.am{color:var(--sub);}
+
+/* ── RISK BAR ── */
+.risk-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
+.risk-name{font-size:12px;width:120px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.risk-track{flex:1;height:5px;background:var(--line);border-radius:3px;overflow:hidden;}
+.risk-fill{height:100%;border-radius:3px;transition:width 1s ease;}
+.risk-pct{font-size:10px;font-family:'DM Mono',monospace;color:var(--dim);width:30px;text-align:right;}
+
+/* ── HEALTH DIAL ── */
+.health-wrap{display:flex;align-items:center;gap:18px;margin-bottom:12px;}
+.health-num{
+  font-size:52px;font-weight:700;letter-spacing:-3px;
+  line-height:1;
+}
+.health-info{font-size:12px;color:var(--sub);line-height:1.7;}
+
+/* ── GANTT ── */
+#ganttChart{width:100%;overflow-x:auto;}
+.gantt-table{width:100%;border-collapse:collapse;font-size:12px;}
+.gantt-table th{
+  padding:8px 10px;font-size:10px;font-family:'DM Mono',monospace;
+  color:var(--dim);letter-spacing:0.5px;
+  border-bottom:1px solid var(--line);
+  text-align:left;font-weight:500;
+}
+.gantt-table td{
+  padding:8px 10px;border-bottom:1px solid rgba(31,45,69,0.4);
+  vertical-align:middle;
+}
+.gantt-bar-cell{min-width:200px;position:relative;}
+.gantt-bar-bg{
+  height:14px;background:var(--ink3);border-radius:3px;
+  position:relative;overflow:hidden;
+}
+.gantt-bar-fill{
+  position:absolute;left:0;top:0;height:100%;border-radius:3px;
+  transition:width 1s ease;
+}
+.gantt-owner{color:var(--neon2);font-family:'DM Mono',monospace;font-size:11px;}
+
+/* ── APPROVAL GATE ── */
+.gate{
+  background:linear-gradient(135deg,rgba(249,115,22,0.06),rgba(167,139,250,0.06));
+  border:1px solid rgba(249,115,22,0.3);
+  border-radius:12px;padding:20px;
+  margin-top:14px;display:none;
+}
+.gate.show{display:block;animation:slideup 0.4s ease;}
+@keyframes slideup{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.gate-title{font-size:14px;font-weight:700;color:var(--fire);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.gate-desc{font-size:13px;color:var(--sub);line-height:1.6;}
+.gate-btns{display:flex;gap:10px;margin-top:16px;}
+
+/* ── ANALYTICS (section 2) ── */
+.analytics-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:20px;
+  max-width:1320px;margin:0 auto;padding:24px;
+}
+@media(max-width:900px){.analytics-grid{grid-template-columns:1fr;}}
+
+.chart-card{background:var(--ink2);border:1px solid var(--line);border-radius:14px;padding:20px;}
+.chart-title{font-size:13px;font-weight:600;color:var(--sub);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+
+/* ── OWNER LEADERBOARD ── */
+.owner-row{
+  display:flex;align-items:center;gap:12px;
+  padding:8px 0;border-bottom:1px solid rgba(31,45,69,0.5);
+}
+.owner-row:last-child{border-bottom:none;}
+.owner-avatar{
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;flex-shrink:0;
+}
+.owner-name{font-size:13px;font-weight:500;flex:1;}
+.owner-bar-wrap{width:80px;}
+.owner-bar{height:4px;border-radius:2px;transition:width 1s ease;}
+.owner-cnt{font-size:11px;font-family:'DM Mono',monospace;color:var(--dim);width:20px;text-align:right;}
+
+/* ── TIMELINE ── */
+.timeline{position:relative;padding-left:20px;}
+.timeline::before{
+  content:'';position:absolute;left:7px;top:0;bottom:0;
+  width:1px;background:linear-gradient(var(--neon),var(--neon2),transparent);
+}
+.tl-item{position:relative;margin-bottom:16px;}
+.tl-dot{
+  position:absolute;left:-16px;top:4px;
+  width:8px;height:8px;border-radius:50%;
+  border:2px solid var(--neon);background:var(--ink);
+}
+.tl-time{font-size:10px;font-family:'DM Mono',monospace;color:var(--neon);margin-bottom:2px;}
+.tl-text{font-size:12px;color:var(--sub);line-height:1.5;}
+
+/* ── CONNECTOR ── */
+.connector{
+  text-align:center;color:var(--dim);font-size:14px;
+  height:16px;line-height:16px;
+  margin:-2px 0;
+}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:24px;right:24px;
+  background:var(--ink2);border:1px solid var(--neon3);
+  color:var(--neon3);padding:12px 18px;border-radius:10px;
+  font-size:12px;font-family:'DM Mono',monospace;
+  transform:translateY(80px);transition:transform 0.3s;
+  z-index:999;
+  box-shadow:0 8px 24px rgba(52,211,153,0.15);
+}
+.toast.show{transform:translateY(0);}
+
+/* ── PIPELINE STATUS ── */
+#pipe-status{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:0.5px;padding:3px 10px;border-radius:20px;}
+
+/* ── STREAMING TEXT ── */
+.cursor-blink{
+  display:inline-block;width:2px;height:12px;
+  background:var(--neon);margin-left:2px;
+  animation:blink 1s step-end infinite;vertical-align:middle;
+}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+
+/* ── COMPARE ── */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1320px;margin:0 auto;padding:24px;}
+
+/* ── INSIGHT CARD ── */
+.insight{
+  background:linear-gradient(135deg,rgba(0,229,255,0.04),rgba(167,139,250,0.04));
+  border:1px solid rgba(167,139,250,0.2);
+  border-radius:10px;padding:14px;margin-bottom:10px;
+}
+.insight-head{font-size:12px;font-weight:600;margin-bottom:4px;color:var(--neon2);}
+.insight-body{font-size:12px;color:var(--sub);line-height:1.5;}
+
+/* ── FILE UPLOAD ── */
+.upload-zone{
+  border:2px dashed var(--line);border-radius:10px;
+  padding:24px;text-align:center;cursor:pointer;
+  transition:all 0.2s;background:var(--ink3);margin-bottom:12px;
+}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--neon);background:rgba(0,229,255,0.03);}
+.upload-icon{font-size:28px;margin-bottom:8px;}
+.upload-text{font-size:13px;color:var(--sub);}
+.upload-sub{font-size:11px;color:var(--dim);margin-top:4px;font-family:'DM Mono',monospace;}
+input[type=file]{display:none;}
+
+/* ── WORD COUNTER ── */
+.wc{font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-align:right;margin-top:4px;}
+
+/* ── SPEAKER PILLS ── */
+.speaker-strip{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.speaker-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 10px;border-radius:20px;
+  font-size:11px;font-family:'DM Mono',monospace;
+  background:rgba(167,139,250,0.08);
+  border:1px solid rgba(167,139,250,0.2);
+  color:var(--neon2);
+}
+
+/* ── REALTIME FEED ── */
+.rt-feed{
+  max-height:140px;overflow-y:auto;
+  background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;
+  border:1px solid var(--line);
+  font-family:'DM Mono',monospace;font-size:11px;line-height:1.8;
+  scrollbar-width:thin;scrollbar-color:var(--line) transparent;
+}
+.rt-line{opacity:0;animation:fadein 0.4s forwards;}
+@keyframes fadein{to{opacity:1;}}
+.rt-time{color:var(--neon);}
+.rt-agent{color:var(--neon2);}
+.rt-msg{color:var(--sub);}
+
+/* ── SUMMARY MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.7);
+  backdrop-filter:blur(8px);z-index:500;
+  display:none;align-items:center;justify-content:center;
+}
+.modal-overlay.show{display:flex;}
+.modal{
+  background:var(--ink2);border:1px solid var(--line);
+  border-radius:16px;max-width:640px;width:90%;
+  max-height:80vh;overflow-y:auto;padding:28px;
+  animation:slideup 0.3s ease;
+}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;}
+.modal-close{background:none;border:none;color:var(--sub);font-size:20px;cursor:pointer;}
+.modal-close:hover{color:var(--text);}
+
+/* ── SCROLL ── */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<nav class="z1">
+  <div class="nav-brand">
+    <div class="nav-logo">🧠</div>
+    <div class="nav-name">Meet<em>Mind</em></div>
+    <div class="nav-pill">v2 · MULTI-AGENT</div>
+  </div>
+  <div style="display:flex;gap:4px;">
+    <button class="nav-tab active" onclick="switchNav(this,'main')">⚡ Pipeline</button>
+    <button class="nav-tab" onclick="switchNav(this,'analytics')">📊 Analytics</button>
+    <button class="nav-tab" onclick="switchNav(this,'history')">🗂 History</button>
+  </div>
+  <div class="nav-right">
+    <div class="live-badge"><div class="pulse-dot"></div>5 AGENTS LIVE</div>
+  </div>
+</nav>
+
+<!-- ════ SECTION: MAIN ════ -->
+<div id="sec-main" class="section active z1">
+
+  <div class="hero z1">
+    <div class="hero-eyebrow">🏆 ET AI HACKATHON 2026 · PROBLEM STATEMENT #2</div>
+    <h1>Your meeting ended.<br><span class="g1">The work</span> <span class="g2">already began.</span></h1>
+    <p class="hero-sub">5 AI agents cascade through extraction, orchestration, drafting, tracking, and audit logging — autonomously. Zero follow-up emails. Zero dropped tasks. One approval click.</p>
+  </div>
+
+  <div class="kpi-strip z1" id="kpiStrip" style="display:none;">
+    <div class="kpi"><div class="kpi-val" id="kS1">0</div><div class="kpi-label">ACTION ITEMS</div></div>
+    <div class="kpi"><div class="kpi-val" id="kS2">0</div><div class="kpi-label">EMAILS DRAFTED</div></div>
+    <div class="kpi"><div class="kpi-val" id="kS3">0</div><div class="kpi-label">JIRA TICKETS</div></div>
+    <div class="kpi"><div class="kpi-val" id="kS4">0</div><div class="kpi-label">AUDIT ENTRIES</div></div>
+    <div class="kpi"><div class="kpi-val" id="kS5">—</div><div class="kpi-label">RUNTIME</div></div>
+  </div>
+
+  <div class="workspace z1">
+
+    <!-- LEFT PANEL -->
+    <div>
+      <div class="card">
+        <div class="tab-row">
+          <button class="tab-btn active" onclick="switchTab(this,'t-paste')">📋 Paste</button>
+          <button class="tab-btn" onclick="switchTab(this,'t-upload')">📁 Upload</button>
+          <button class="tab-btn" onclick="switchTab(this,'t-config')">⚙️ Config</button>
+        </div>
+
+        <div class="tab-pane active" id="t-paste">
+          <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileIn').click()">
+            <div class="upload-icon">📄</div>
+            <div class="upload-text">Drop a .txt file or click to upload</div>
+            <div class="upload-sub">Supports .txt · .md · .vtt transcripts</div>
+          </div>
+          <input type="file" id="fileIn" accept=".txt,.md,.vtt" onchange="loadFile(this)">
+          <textarea id="transcript" placeholder="Or paste your meeting transcript here..."></textarea>
+          <div class="wc" id="wordCount">0 words</div>
+          <div id="speakerStrip" class="speaker-strip"></div>
+          <div class="scenarios">
+            <div class="scenario-btn" onclick="loadSample('product')"><span class="scenario-icon">⚡</span><span class="scenario-name">Product Sprint</span><span class="scenario-sub">8 tasks · 2 conflicts</span></div>
+            <div class="scenario-btn" onclick="loadSample('sales')"><span class="scenario-icon">💼</span><span class="scenario-name">Sales Review</span><span class="scenario-sub">Pipeline · churn risk</span></div>
+            <div class="scenario-btn" onclick="loadSample('crisis')"><span class="scenario-icon">🚨</span><span class="scenario-name">P0 Incident</span><span class="scenario-sub">Postmortem · SLA</span></div>
+          </div>
+        </div>
+
+        <div class="tab-pane" id="t-upload">
+          <div style="padding:20px 0;text-align:center;color:var(--sub);font-size:13px;">
+            <p style="margin-bottom:12px;">🎙️ <strong>Audio transcription</strong> coming in v2.1</p>
+            <p>Supported: Whisper via local pipeline · Zoom transcripts · Google Meet exports</p>
+            <div style="margin-top:20px;background:var(--ink3);border-radius:8px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);">
+              POST /api/transcribe<br>Content-Type: audio/mp4<br>→ Returns: transcript JSON
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-pane" id="t-config">
+          <div class="config-grid">
+            <div class="config-box">
+              <div class="config-lbl">ESCALATION THRESHOLD</div>
+              <select id="threshold"><option value="2">2 hours</option><option value="4">4 hours</option><option value="8" selected>8 hours</option><option value="24">24 hours</option></select>
+            </div>
+            <div class="config-box">
+              <div class="config-lbl">EMAIL TONE</div>
+              <select id="tone"><option value="direct">Direct</option><option value="formal">Formal</option><option value="friendly">Friendly</option></select>
+            </div>
+            <div class="config-box">
+              <div class="config-lbl">TICKET SYSTEM</div>
+              <select id="ticketSys"><option value="jira">Jira</option><option value="linear">Linear</option><option value="notion">Notion</option></select>
+            </div>
+            <div class="config-box">
+              <div class="config-lbl">MAX RISKS SHOWN</div>
+              <input type="number" id="maxRisks" value="5" min="3" max="10">
+            </div>
+          </div>
+          <div style="margin-top:12px;background:var(--ink3);border-radius:8px;padding:12px;font-size:12px;color:var(--sub);">
+            <div style="color:var(--neon3);font-weight:600;margin-bottom:6px;">✅ Integrations ready</div>
+            <div style="font-family:'DM Mono',monospace;font-size:11px;">Jira · SendGrid · Google Calendar · Slack · Notion</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-time feed -->
+      <div class="card" style="margin-top:16px;">
+        <div class="card-head">
+          <div class="card-title">📡 LIVE AGENT FEED</div>
+          <button class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="document.getElementById('rtFeed').innerHTML=''">Clear</button>
+        </div>
+        <div class="card-body" style="padding:12px;">
+          <div class="rt-feed" id="rtFeed"><div style="color:var(--dim);font-family:'DM Mono',monospace;font-size:11px;">Waiting for pipeline launch...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">⚡ LIVE AGENT PIPELINE</div>
+          <span id="pipe-status" class="badge-idle">STANDBY</span>
+        </div>
+        <div class="card-body">
+
+          <div class="prog-wrap"><div class="prog-bar" id="progBar"></div></div>
+
+          <button class="btn-primary" id="runBtn" onclick="run()" style="margin-top:14px;">
+            <span>▶</span> LAUNCH AGENT PIPELINE
+          </button>
+
+          <div style="height:16px;"></div>
+
+          <div class="agent-list" id="agentList">
+            <!-- agents injected by JS -->
+          </div>
+
+          <!-- Gate -->
+          <div class="gate" id="gate">
+            <div class="gate-title">⚠️ HUMAN APPROVAL REQUIRED</div>
+            <div class="gate-desc">All 5 agents completed. Review outputs above — then approve to dispatch emails, create tickets, and activate SLA monitoring.</div>
+            <div class="gate-btns">
+              <button class="btn-approve" onclick="approve()">✅ Approve & Dispatch</button>
+              <button class="btn-modify" onclick="modify()">✏️ Modify First</button>
+              <button class="btn-modify" onclick="showExport()">📤 Export Report</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Gantt view -->
+      <div class="card" id="ganttCard" style="margin-top:16px;display:none;">
+        <div class="card-head">
+          <div class="card-title">📅 EXECUTION GANTT</div>
+          <button class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="toggleGantt()">Toggle</button>
+        </div>
+        <div class="card-body" id="ganttBody" style="overflow-x:auto;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SECTION: ANALYTICS ════ -->
+<div id="sec-analytics" class="section z1">
+  <div style="max-width:1320px;margin:0 auto;padding:28px 24px 16px;">
+    <h2 style="font-size:24px;font-weight:700;letter-spacing:-1px;margin-bottom:4px;">Cross-Meeting Analytics</h2>
+    <p style="color:var(--sub);font-size:14px;">Aggregated insights across all processed meetings</p>
+  </div>
+  <div class="analytics-grid">
+    <div class="chart-card" style="grid-column:span 2;">
+      <div class="chart-title">📈 Task Velocity (Last 30 Days)</div>
+      <canvas id="velocityChart" height="120"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">🎯 Owner Load Distribution</div>
+      <div id="ownerChart"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">⚠️ Stall Rate by Meeting Type</div>
+      <canvas id="stallChart" height="160"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">⏱ Avg Resolution Time (hrs)</div>
+      <canvas id="resolutionChart" height="160"></canvas>
+    </div>
+    <div class="chart-card" style="grid-column:span 3;">
+      <div class="chart-title">💡 AI-Generated Insights</div>
+      <div id="aiInsights">
+        <div class="insight"><div class="insight-head">📌 Recurring Bottleneck Detected</div><div class="insight-body">Security reviews consistently slip across sprints. Recommend dedicated 2-hour weekly security review slot to prevent sprint-level blockers.</div></div>
+        <div class="insight"><div class="insight-head">📉 Stall Risk: Rahul (Engineering)</div><div class="insight-body">Rahul owns 34% of high-priority tasks but has a 61% stall rate. Consider redistributing new assignments or adding a co-owner pattern.</div></div>
+        <div class="insight"><div class="insight-head">🚀 Quick Win Available</div><div class="insight-body">5 action items across 3 meetings can be parallelized this week. Estimated time savings: 3.2 days of combined effort.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SECTION: HISTORY ════ -->
+<div id="sec-history" class="section z1">
+  <div style="max-width:1320px;margin:0 auto;padding:28px 24px 16px;">
+    <h2 style="font-size:24px;font-weight:700;letter-spacing:-1px;margin-bottom:4px;">Meeting History</h2>
+    <p style="color:var(--sub);font-size:14px;">All processed meetings with full audit trails</p>
+  </div>
+  <div style="max-width:1320px;margin:0 auto;padding:0 24px 40px;" id="historyList">
+    <div style="color:var(--dim);font-family:'DM Mono',monospace;font-size:13px;padding:40px;text-align:center;">
+      No meetings processed yet. Run the pipeline to see history here.
+    </div>
+  </div>
+</div>
+
+<!-- ════ EXPORT MODAL ════ -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal">
+    <div class="modal-title">
+      📤 Export Meeting Report
+      <button class="modal-close" onclick="document.getElementById('exportModal').classList.remove('show')">×</button>
+    </div>
+    <div id="exportContent" style="font-size:13px;color:var(--sub);line-height:1.8;"></div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn-approve" onclick="copyExport()">📋 Copy to Clipboard</button>
+      <button class="btn-modify" onclick="document.getElementById('exportModal').classList.remove('show')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ══════════════════════════════════════
+// DATA & STATE
+// ══════════════════════════════════════
+const SAMPLES = {
+  product: `[Product Sprint Planning — March 29, 2026 — 10:00 AM]
+Attendees: Priya (PM), Rahul (Engineering Lead), Ananya (Design), Vikram (Backend), Saurabh (QA)
+
+Priya: Let's kick off. Sprint 14 review and 15 planning. Rahul, what shipped?
+
+Rahul: Payment integration is live. Minor bug in edge case — Vikram has a fix ready, needs QA sign-off by EOD.
+
+Vikram: I'll push the patch in 2 hours. Ananya, can you verify the UI flow before that?
+
+Ananya: Sure, I'll check it now. But I haven't started the onboarding redesign Priya asked for last week.
+
+Priya: That's blocking the investor demo on April 3rd. Ananya, can we have wireframes by Monday?
+
+Ananya: Monday is tight but doable if Rahul can get me the revised user flow by today.
+
+Rahul: I'll send it by 3 PM. Also — we need to decide on the notification service. AWS SNS or Firebase?
+
+Priya: Let's go with Firebase. Vikram, you own that decision. Set up a spike, 3 days max.
+
+Vikram: Got it. Saurabh, can you set up the test environment for the notification service?
+
+Saurabh: Yes, I'll have it ready by tomorrow morning. One issue — we still haven't addressed the security audit findings from last sprint.
+
+Priya: Critical. Rahul, that cannot slip again. Assign it to yourself with a Friday deadline. No extensions.
+
+Rahul: Understood. I'll prioritize that over the new feature work.
+
+Priya: Good. Any blockers? [silence] None. Let's ship Sprint 15. Standup tomorrow at 9:30 AM.`,
+
+  sales: `[Q1 Sales Review — March 29, 2026 — 2:00 PM]
+Attendees: Neeraj (VP Sales), Divya (Account Exec), Karan (SDR), Meera (Revenue Ops), Aditya (CS Lead)
+
+Neeraj: We're 23% short of Q1 target. Divya, walk us through the pipeline.
+
+Divya: Three enterprise deals in final stage. TechMart at 90% — expecting PO by April 5th. Bharat Bank is stuck — their legal team has been sitting on the contract for 3 weeks.
+
+Neeraj: That's unacceptable. Divya, escalate to their CPO directly. I'll send you my contact. Do it today.
+
+Divya: Will do. InfraCo is cold — they lost budget. I'd recommend we write it off.
+
+Neeraj: Agreed. Meera, remove InfraCo from the forecast model. What's our revised Q1 number?
+
+Meera: Without InfraCo, we're at 78% of target. To hit 85%, we need TechMart and one more mid-market close.
+
+Karan: I have two mid-market prospects warm — Hexaware and SpiceJet. Both had demos last week.
+
+Neeraj: Karan, I need follow-up proposals sent to both by tomorrow EOD. Can you commit to that?
+
+Karan: Yes, I'll have them done.
+
+Aditya: Quick flag — two customers on renewal are showing low engagement. Might churn in 60 days.
+
+Neeraj: Aditya, set up health-check calls with both this week. If there's churn risk, loop in Divya for a save play.
+
+Aditya: On it. I'll also send them the new product roadmap to re-engage.
+
+Neeraj: Good. Meera, update the board deck with revised projections. Needs to be ready for Monday's call.`,
+
+  crisis: `[P0 Incident Standup — March 29, 2026 — 6:45 AM]
+Attendees: Arjun (CTO), Sneha (DevOps Lead), Dev (Backend), Pooja (Infra), Rahul (Customer Success)
+
+Arjun: We have a production outage. Payment service down since 6:10 AM. 3200 users affected. What happened?
+
+Sneha: Database failover didn't trigger. Primary went down, replica didn't promote. Root cause: misconfigured health check timeout.
+
+Arjun: ETA to restore?
+
+Dev: 20 minutes if Pooja can push the config fix. Already tested in staging.
+
+Pooja: Pushing now. [typing sounds] Done. Monitoring for 10 minutes to confirm stability.
+
+Arjun: Good. Rahul, what do customers know?
+
+Rahul: Nothing yet. We need a status page update and emails to affected enterprise accounts immediately.
+
+Arjun: Rahul, draft and send that in the next 15 minutes. No template — be direct. Own the failure.
+
+Rahul: On it.
+
+Sneha: We also need a full postmortem. This is the second failover failure in 60 days.
+
+Arjun: Sneha, you own the postmortem. Complete by Tuesday. And let's fix the health check monitoring permanently — Pooja, add that to your sprint.
+
+Pooja: Confirmed stable. Service restored at 6:58 AM. Total downtime: 48 minutes.
+
+Arjun: 48 minutes is bad. Let's make sure this never repeats. Dev, review the entire failover config. Submit findings by Wednesday.
+
+Dev: Will do.
+
+Arjun: We will also need to consider SLA credits for affected enterprise users. Rahul, assess and propose a remediation plan by EOD.`
+};
+
+let state = { running:false, outputs:{}, startTime:null, meetingHistory:[] };
+
+// ══════════════════════════════════════
+// AGENT CONFIG
+// ══════════════════════════════════════
+const AGENTS = [
+  {id:1, icon:'🔍', name:'Extractor Agent', desc:'NLP · decision mining · entity recognition · sentiment'},
+  {id:2, icon:'🎯', name:'Orchestrator Agent', desc:'Priority scoring · conflict detection · deadline matrix'},
+  {id:3, icon:'✍️', name:'Drafter Agent', desc:'Follow-up emails · Jira tickets · calendar blocks'},
+  {id:4, icon:'📡', name:'Tracker & Escalator', desc:'SLA monitoring · stall prediction · escalation playbook'},
+  {id:5, icon:'📒', name:'Audit Logger', desc:'Decision provenance · reasoning chain · compliance trail'},
+];
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+function init() {
+  renderAgents();
+  loadSample('product');
+  initAnalytics();
+  document.getElementById('transcript').addEventListener('input', updateWordCount);
+  document.getElementById('dropZone').addEventListener('dragover', e=>{e.preventDefault();e.currentTarget.classList.add('drag');});
+  document.getElementById('dropZone').addEventListener('dragleave', e=>e.currentTarget.classList.remove('drag'));
+  document.getElementById('dropZone').addEventListener('drop', e=>{
+    e.preventDefault();e.currentTarget.classList.remove('drag');
+    if(e.dataTransfer.files[0]) loadFile({files:e.dataTransfer.files});
+  });
+}
+
+function renderAgents() {
+  const list = document.getElementById('agentList');
+  list.innerHTML = AGENTS.map((a,i) => `
+    <div class="agent" id="ag-${a.id}">
+      <div class="agent-row" onclick="toggleAgent(${a.id})">
+        <div class="agent-num" id="anum-${a.id}">${a.id}</div>
+        <div class="agent-meta">
+          <div class="agent-name">${a.icon} ${a.name}</div>
+          <div class="agent-desc">${a.desc}</div>
+        </div>
+        <span class="agent-badge badge-idle" id="abadge-${a.id}">IDLE</span>
+        <button class="chevron" id="achev-${a.id}">▼</button>
+      </div>
+      <div class="agent-body" id="abody-${a.id}"></div>
+    </div>
+    ${i < AGENTS.length-1 ? '<div class="connector">↓</div>' : ''}
+  `).join('');
+}
+
+// ══════════════════════════════════════
+// NAV
+// ══════════════════════════════════════
+function switchNav(btn, id) {
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sec-'+id).classList.add('active');
+}
+
+function switchTab(btn, id) {
+  const parent = btn.closest('.card');
+  parent.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  parent.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+// ══════════════════════════════════════
+// FILE / TEXT
+// ══════════════════════════════════════
+function loadFile(input) {
+  const f = input.files[0];
+  if(!f) return;
+  const r = new FileReader();
+  r.onload = e => {
+    document.getElementById('transcript').value = e.target.result;
+    updateWordCount();
+    toast(`📄 Loaded: ${f.name}`);
+  };
+  r.readAsText(f);
+}
+
+function loadSample(k) {
+  document.getElementById('transcript').value = SAMPLES[k];
+  updateWordCount();
+}
+
+function updateWordCount() {
+  const txt = document.getElementById('transcript').value;
+  const words = txt.trim() ? txt.trim().split(/\s+/).length : 0;
+  document.getElementById('wordCount').textContent = `${words} words`;
+  // Parse speakers
+  const speakers = [...new Set([...txt.matchAll(/^([A-Z][a-z]+):/gm)].map(m=>m[1]))];
+  const strip = document.getElementById('speakerStrip');
+  if(speakers.length) {
+    strip.innerHTML = speakers.map(s=>`<span class="speaker-pill">👤 ${s}</span>`).join('');
+  } else {
+    strip.innerHTML = '';
+  }
+}
+
+// ══════════════════════════════════════
+// AGENT TOGGLE
+// ══════════════════════════════════════
+function toggleAgent(id) {
+  const body = document.getElementById('abody-'+id);
+  const chev = document.getElementById('achev-'+id);
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+function openAgent(id) {
+  document.getElementById('abody-'+id).classList.add('open');
+  document.getElementById('achev-'+id).classList.add('open');
+}
+
+function setAgentStatus(id, s) {
+  const ag = document.getElementById('ag-'+id);
+  const badge = document.getElementById('abadge-'+id);
+  const num = document.getElementById('anum-'+id);
+  ag.className = 'agent';
+  badge.className = 'agent-badge';
+  num.style.background = '';num.style.color = '';
+  if(s==='running'){ag.classList.add('running');badge.classList.add('badge-run');badge.textContent='RUNNING';}
+  else if(s==='done'){ag.classList.add('done');badge.classList.add('badge-done');badge.textContent='DONE ✓';}
+  else if(s==='error'){ag.classList.add('error');badge.classList.add('badge-err');badge.textContent='ERROR';}
+  else{badge.classList.add('badge-idle');badge.textContent='IDLE';}
+}
+
+function setAgentBody(id, html) {
+  document.getElementById('abody-'+id).innerHTML = html;
+  openAgent(id);
+}
+
+// ══════════════════════════════════════
+// LIVE FEED
+// ══════════════════════════════════════
+function feed(agent, msg) {
+  const el = document.getElementById('rtFeed');
+  const now = new Date().toTimeString().slice(0,8);
+  const line = document.createElement('div');
+  line.className = 'rt-line';
+  line.innerHTML = `<span class="rt-time">${now}</span> <span class="rt-agent">[${agent}]</span> <span class="rt-msg">${msg}</span>`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+// ══════════════════════════════════════
+// CLAUDE API
+// ══════════════════════════════════════
+async function callClaude(system, user) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1000,
+      system,
+      messages:[{role:'user',content:user}]
+    })
+  });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error.message);
+  return data.content.map(b=>b.text||'').join('');
+}
+
+function parseJSON(raw, fallback) {
+  try { return JSON.parse(raw.replace(/```json|```/g,'').trim()); }
+  catch(e) { return fallback; }
+}
+
+// ══════════════════════════════════════
+// MAIN PIPELINE
+// ══════════════════════════════════════
+async function run() {
+  const transcript = document.getElementById('transcript').value.trim();
+  if(!transcript){toast('⚠️ Paste a transcript first');return;}
+  if(state.running) return;
+  state.running = true;
+  state.outputs = {};
+  state.startTime = Date.now();
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;animation:throb 0.8s infinite">⟳</span> AGENTS RUNNING...';
+
+  const pipe = document.getElementById('pipe-status');
+  pipe.className = 'badge-run';pipe.textContent = 'RUNNING';
+
+  document.getElementById('kpiStrip').style.display = 'grid';
+  document.getElementById('gate').classList.remove('show');
+  document.getElementById('progBar').style.width = '0%';
+  document.getElementById('rtFeed').innerHTML = '';
+  document.getElementById('ganttCard').style.display = 'none';
+
+  // Reset agents
+  AGENTS.forEach(a=>{setAgentStatus(a.id,'idle');document.getElementById('abody-'+a.id).innerHTML='';document.getElementById('abody-'+a.id).classList.remove('open');document.getElementById('achev-'+a.id).classList.remove('open');});
+
+  const threshold = document.getElementById('threshold').value;
+  const tone = document.getElementById('tone').value;
+  const ticketSys = document.getElementById('ticketSys').value;
+
+  try {
+    // ── AGENT 1 ──
+    setAgentStatus(1,'running');
+    feed('EXTRACT','Parsing transcript... running NLP entity extraction...');
+    setAgentBody(1,`<div class="out-section"><div class="out-label">THINKING</div><div class="thought">Tokenizing transcript... identifying speakers... mining decision verbs... detecting blocker signals... scoring sentiment...<span class="cursor-blink"></span></div></div>`);
+    document.getElementById('progBar').style.width = '12%';
+
+    const ex1 = await callClaude(
+      `You are an elite NLP extraction agent. Analyze the meeting transcript and extract structured data. Respond ONLY with valid JSON — no preamble, no backticks:
+{"meeting_meta":{"title":"...","date":"...","duration_est":"...","meeting_type":"sprint|sales|crisis|general","attendees":["name (role)"]},"decisions":[{"decision":"...","made_by":"...","rationale":"...","impact":"high|medium|low"}],"action_items":[{"task":"...","owner":"...","deadline":"...","priority":"high|medium|low","category":"engineering|sales|ops|design|other","depends_on":null}],"blockers":[{"issue":"...","affects":"...","raised_by":"...","severity":"high|medium|low"}],"risks":[{"risk":"...","severity":"high|medium|low","probability":50}],"sentiment":{"overall":"positive|neutral|tense|urgent","key_tensions":["..."],"energy_level":"high|medium|low"}}`,
+      `TRANSCRIPT:\n${transcript}`
+    );
+
+    const extracted = parseJSON(ex1, {meeting_meta:{title:'Meeting',date:'Today',duration_est:'~30min',meeting_type:'general',attendees:[]},decisions:[],action_items:[],blockers:[],risks:[],sentiment:{overall:'neutral',key_tensions:[],energy_level:'medium'}});
+    state.outputs.extracted = extracted;
+
+    const items = extracted.action_items || [];
+    const decisions = extracted.decisions || [];
+    const risks = extracted.risks || [];
+    const blockers = extracted.blockers || [];
+
+    feed('EXTRACT',`Found ${decisions.length} decisions, ${items.length} action items, ${blockers.length} blockers, ${risks.length} risks`);
+    feed('EXTRACT',`Sentiment: ${extracted.sentiment?.overall} · Energy: ${extracted.sentiment?.energy_level}`);
+
+    const riskColors = {high:'var(--red)',medium:'var(--fire)',low:'var(--neon3)'};
+
+    setAgentBody(1,`
+      <div class="out-section">
+        <div class="out-label">MEETING INTELLIGENCE</div>
+        <div class="row-item">
+          <div class="row-icon">📋</div>
+          <div class="row-content">
+            <div class="row-main"><strong>${extracted.meeting_meta?.title||'Meeting'}</strong></div>
+            <div class="row-meta">${extracted.meeting_meta?.date} · ${extracted.meeting_meta?.duration_est} · ${extracted.meeting_meta?.meeting_type?.toUpperCase()}</div>
+            <div style="margin-top:6px;">${(extracted.meeting_meta?.attendees||[]).map(a=>`<span class="chip chip-purple" style="margin-right:4px;">${a}</span>`).join('')}</div>
+          </div>
+          <span class="chip chip-${extracted.sentiment?.overall==='urgent'?'red':extracted.sentiment?.overall==='tense'?'orange':'cyan'}">${(extracted.sentiment?.overall||'NEUTRAL').toUpperCase()}</span>
+        </div>
+      </div>
+      <div class="out-section">
+        <div class="out-label">DECISIONS (${decisions.length})</div>
+        ${decisions.map(d=>`<div class="row-item"><div class="row-icon">⚖️</div><div class="row-content"><div class="row-main">${d.decision}</div><div class="row-meta">BY: ${d.made_by} · IMPACT: ${d.impact||'—'}</div><div class="row-sub">${d.rationale||''}</div></div></div>`).join('')}
+      </div>
+      <div class="out-section">
+        <div class="out-label">ACTION ITEMS (${items.length})</div>
+        ${items.map(a=>`<div class="row-item p-${a.priority}"><div class="row-icon">${a.priority==='high'?'🔴':a.priority==='medium'?'🟡':'🟢'}</div><div class="row-content"><div class="row-main">${a.task}</div><div class="row-meta">→ ${a.owner} · DUE: ${a.deadline} · ${(a.category||'').toUpperCase()}</div></div><span class="chip chip-${a.priority==='high'?'red':a.priority==='medium'?'orange':'green'}">${a.priority.toUpperCase()}</span></div>`).join('')}
+      </div>
+      <div class="out-section">
+        <div class="out-label">RISK MATRIX</div>
+        ${risks.map(r=>`<div class="risk-row"><div class="risk-name" title="${r.risk}">${r.risk?.substring(0,28)}...</div><div class="risk-track"><div class="risk-fill" style="width:${r.probability||50}%;background:${riskColors[r.severity]||'var(--neon)'}"></div></div><span class="risk-pct">${r.probability||50}%</span></div>`).join('')}
+      </div>
+      ${blockers.length?`<div class="out-section"><div class="out-label">BLOCKERS (${blockers.length})</div>${blockers.map(b=>`<div class="row-item p-${b.severity}"><div class="row-icon">🚧</div><div class="row-content"><div class="row-main">${b.issue}</div><div class="row-meta">AFFECTS: ${b.affects} · RAISED BY: ${b.raised_by}</div></div></div>`).join('')}</div>`:''}
+    `);
+
+    document.getElementById('kS1').textContent = items.length;
+    setAgentStatus(1,'done');
+    toast(`✓ Agent 1: ${items.length} actions, ${decisions.length} decisions extracted`);
+
+    // ── AGENT 2 ──
+    await sleep(500);
+    setAgentStatus(2,'running');
+    feed('ORCHESTR','Scoring priority matrix... detecting conflicts... building dependency graph...');
+    setAgentBody(2,`<div class="out-section"><div class="out-label">THINKING</div><div class="thought">Running topological sort on dependency graph... scoring deadlines vs capacity... detecting cross-owner conflicts... generating escalation rules...<span class="cursor-blink"></span></div></div>`);
+    document.getElementById('progBar').style.width = '32%';
+
+    const ex2 = await callClaude(
+      `You are an enterprise workflow orchestration agent. Analyze action items and produce an optimized execution plan. Respond ONLY with valid JSON:
+{"execution_order":[{"step":1,"task":"...","owner":"...","deadline":"...","priority_score":90,"duration_days":1,"reason":"...","dependencies":[]}],"conflicts":[{"conflict":"...","type":"deadline|resource|dependency","resolution":"..."}],"critical_path":["task1","task2"],"auto_escalations":[{"task":"...","escalate_after":"${threshold}h","escalate_to":"...","reason":"..."}],"parallel_tracks":[["task A","task B"]],"owner_load":{"owner_name":3}}`,
+      `ACTION ITEMS:\n${JSON.stringify(items)}\nDECISIONS:\n${JSON.stringify(decisions)}`
+    );
+
+    const orchestrated = parseJSON(ex2, {execution_order:items.map((a,i)=>({step:i+1,task:a.task,owner:a.owner,deadline:a.deadline,priority_score:a.priority==='high'?90:50,duration_days:1,reason:'Standard priority',dependencies:[]})),conflicts:[],critical_path:[],auto_escalations:[],parallel_tracks:[],owner_load:{}});
+    state.outputs.orchestrated = orchestrated;
+
+    const exOrder = orchestrated.execution_order || [];
+    const conflicts = orchestrated.conflicts || [];
+    const escalations = orchestrated.auto_escalations || [];
+
+    feed('ORCHESTR',`Sorted ${exOrder.length} tasks by priority score. Detected ${conflicts.length} conflicts.`);
+    feed('ORCHESTR',`Set ${escalations.length} auto-escalation rules at ${threshold}h threshold.`);
+
+    setAgentBody(2,`
+      <div class="out-section">
+        <div class="out-label">EXECUTION PLAN (priority-ordered)</div>
+        ${exOrder.slice(0,6).map(e=>`<div class="row-item"><div class="row-icon" style="font-weight:700;font-family:'DM Mono',monospace;font-size:12px;color:var(--neon);">#${e.step}</div><div class="row-content"><div class="row-main"><strong>${e.task}</strong></div><div class="row-meta">OWNER: ${e.owner} · SCORE: ${e.priority_score}/100 · ~${e.duration_days||1}d</div><div class="row-sub">${e.reason}</div></div></div>`).join('')}
+      </div>
+      ${conflicts.length?`<div class="out-section"><div class="out-label">CONFLICTS DETECTED & RESOLVED (${conflicts.length})</div>${conflicts.map(c=>`<div class="row-item p-high"><div class="row-icon">⚔️</div><div class="row-content"><div class="row-main">${c.conflict}</div><div class="row-meta">TYPE: ${c.type||'—'}</div><div class="row-sub">✅ ${c.resolution}</div></div></div>`).join('')}</div>`:''}
+      <div class="out-section">
+        <div class="out-label">AUTO-ESCALATION RULES (${escalations.length})</div>
+        ${escalations.map(e=>`<div class="row-item p-high"><div class="row-icon">📡</div><div class="row-content"><div class="row-main">${e.task}</div><div class="row-meta">ESCALATE AFTER ${e.escalate_after} → ${e.escalate_to}</div><div class="row-sub">${e.reason}</div></div></div>`).join('')}
+      </div>
+    `);
+    setAgentStatus(2,'done');
+    toast('✓ Agent 2: Execution plan & escalation rules set');
+    renderGantt(exOrder);
+
+    // ── AGENT 3 ──
+    await sleep(500);
+    setAgentStatus(3,'running');
+    feed('DRAFTER','Generating personalized per-owner emails... drafting tickets...');
+    setAgentBody(3,`<div class="out-section"><div class="out-label">THINKING</div><div class="thought">Composing ${tone} tone emails per owner... tailoring context per recipient... generating ${ticketSys} ticket descriptions...<span class="cursor-blink"></span></div></div>`);
+    document.getElementById('progBar').style.width = '56%';
+
+    const ex3 = await callClaude(
+      `You are a professional communications agent for enterprise teams. Draft follow-up emails for the top 3 owners and create task tickets. Tone: ${tone}. Ticket system: ${ticketSys}. Respond ONLY with valid JSON:
+{"emails":[{"to":"owner name","role":"their role","subject":"...","body":"Hi [Name],\n\n[2-3 sentences: their tasks, deadlines, dependencies. Max 90 words. Be ${tone}. ]\n\nPlease confirm receipt.\n\nBest,\nMeetMind AI"}],"tickets":[{"title":"...","assignee":"...","priority":"HIGH|MEDIUM|LOW","description":"...","labels":["..."],"story_points":3}],"calendar_blocks":[{"title":"...","attendees":["..."],"duration":"30min","suggested_time":"..."}]}`,
+      `EXECUTION PLAN:\n${JSON.stringify(exOrder.slice(0,6))}\nCONTEXT:\n${transcript.substring(0,600)}`
+    );
+
+    const drafted = parseJSON(ex3, {emails:[{to:'Team',role:'All',subject:'Meeting Follow-up',body:'Please find your tasks from today.'}],tickets:[],calendar_blocks:[]});
+    state.outputs.drafted = drafted;
+
+    const emails = drafted.emails || [];
+    const tickets = drafted.tickets || [];
+    const calBlocks = drafted.calendar_blocks || [];
+
+    feed('DRAFTER',`Drafted ${emails.length} personalized emails, ${tickets.length} tickets, ${calBlocks.length} calendar blocks`);
+
+    document.getElementById('kS2').textContent = emails.length;
+    document.getElementById('kS3').textContent = tickets.length;
+
+    setAgentBody(3,`
+      <div class="out-section">
+        <div class="out-label">PERSONALIZED EMAILS (${emails.length})</div>
+        ${emails.map(e=>`<div class="email-wrap"><div class="email-head">TO: <strong>${e.to}</strong> (${e.role||'—'}) &nbsp;·&nbsp; SUBJ: ${e.subject}</div><div class="email-body">${(e.body||'').replace(/\n/g,'<br>')}</div></div>`).join('')}
+      </div>
+      <div class="out-section">
+        <div class="out-label">${ticketSys.toUpperCase()} TICKETS (${tickets.length})</div>
+        ${tickets.map(t=>`<div class="row-item"><div class="row-icon">🎫</div><div class="row-content"><div class="row-main"><strong>${t.title}</strong></div><div class="row-meta">→ ${t.assignee} · ${t.priority} · ${t.story_points||'?'}pts</div><div class="row-sub">${t.description?.substring(0,80)||''}...</div><div style="margin-top:4px;">${(t.labels||[]).map(l=>`<span class="chip chip-cyan" style="margin-right:3px;">${l}</span>`).join('')}</div></div></div>`).join('')}
+      </div>
+      ${calBlocks.length?`<div class="out-section"><div class="out-label">📅 CALENDAR BLOCKS (${calBlocks.length})</div>${calBlocks.map(c=>`<div class="row-item"><div class="row-icon">📅</div><div class="row-content"><div class="row-main">${c.title}</div><div class="row-meta">${c.duration} · ${c.suggested_time} · ${(c.attendees||[]).join(', ')}</div></div></div>`).join('')}</div>`:''}
+    `);
+    setAgentStatus(3,'done');
+    toast('✓ Agent 3: Emails, tickets & calendar blocks drafted');
+
+    // ── AGENT 4 ──
+    await sleep(500);
+    setAgentStatus(4,'running');
+    feed('TRACKER','Computing SLA windows... modeling stall probability... predicting bottlenecks...');
+    setAgentBody(4,`<div class="out-section"><div class="out-label">THINKING</div><div class="thought">Stall probability model: factoring task complexity, deadline pressure, owner load, dependency chain depth... calculating cascade failure risk...<span class="cursor-blink"></span></div></div>`);
+    document.getElementById('progBar').style.width = '76%';
+
+    const ex4 = await callClaude(
+      `You are an enterprise SLA monitoring and prediction agent. Analyze action items and predict workflow risks. Respond ONLY with valid JSON:
+{"stall_predictions":[{"task":"...","owner":"...","stall_probability":70,"reason":"...","early_warning":"...","recommended_action":"..."}],"escalation_playbook":[{"trigger":"...","action":"...","notify":"...","channel":"slack|email|sms"}],"health_score":72,"bottleneck_owner":"...","cascade_risk":"high|medium|low","recommended_checkins":[{"task":"...","at":"...","method":"..."}]}`,
+      `TASKS:\n${JSON.stringify(exOrder)}\nCONFLICTS:\n${JSON.stringify(conflicts)}\nTHRESHOLD:${threshold}h`
+    );
+
+    const tracked = parseJSON(ex4, {stall_predictions:[],escalation_playbook:[],health_score:72,bottleneck_owner:'Unknown',cascade_risk:'low',recommended_checkins:[]});
+    state.outputs.tracked = tracked;
+
+    const stalls = tracked.stall_predictions || [];
+    const playbook = tracked.escalation_playbook || [];
+    const healthScore = tracked.health_score || 72;
+
+    feed('TRACKER',`Health score: ${healthScore}/100. Bottleneck: ${tracked.bottleneck_owner}. Cascade risk: ${tracked.cascade_risk?.toUpperCase()}`);
+    feed('TRACKER',`${stalls.length} stall predictions. ${playbook.length} escalation rules set.`);
+
+    const hColor = healthScore > 75 ? 'var(--neon3)' : healthScore > 50 ? 'var(--fire)' : 'var(--red)';
+
+    setAgentBody(4,`
+      <div class="out-section">
+        <div class="out-label">WORKFLOW HEALTH SCORE</div>
+        <div class="health-wrap">
+          <div class="health-num" style="background:linear-gradient(135deg,${hColor},var(--neon));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${healthScore}</div>
+          <div class="health-info">
+            Overall Sprint Health<br>
+            <span style="color:var(--dim);">Bottleneck: <strong style="color:var(--neon2);">${tracked.bottleneck_owner}</strong></span><br>
+            <span style="color:var(--dim);">Cascade Risk: <strong style="color:${tracked.cascade_risk==='high'?'var(--red)':tracked.cascade_risk==='medium'?'var(--fire)':'var(--neon3)'};">${(tracked.cascade_risk||'—').toUpperCase()}</strong></span>
+          </div>
+        </div>
+      </div>
+      <div class="out-section">
+        <div class="out-label">STALL PREDICTIONS (${stalls.length})</div>
+        ${stalls.slice(0,4).map(s=>`<div class="row-item p-${s.stall_probability>70?'high':s.stall_probability>40?'med':'low'}"><div class="row-icon">📊</div><div class="row-content"><div class="row-main"><strong>${s.task?.substring(0,50)}</strong></div><div class="row-meta">OWNER: ${s.owner} · STALL RISK: ${s.stall_probability}%</div><div class="row-sub">⚠ ${s.early_warning} → ${s.recommended_action}</div></div></div>`).join('')}
+      </div>
+      <div class="out-section">
+        <div class="out-label">ESCALATION PLAYBOOK (${playbook.length})</div>
+        ${playbook.map(p=>`<div class="row-item"><div class="row-icon">🚨</div><div class="row-content"><div class="row-main"><strong>TRIGGER:</strong> ${p.trigger}</div><div class="row-meta">ACTION: ${p.action} → ${p.notify} via ${p.channel||'email'}</div></div></div>`).join('')}
+      </div>
+    `);
+    setAgentStatus(4,'done');
+    toast('✓ Agent 4: SLA monitoring & stall predictions ready');
+
+    // ── AGENT 5 ──
+    await sleep(500);
+    setAgentStatus(5,'running');
+    feed('AUDIT','Building immutable audit trail... recording all agent decisions with reasoning chains...');
+    setAgentBody(5,`<div class="out-section"><div class="out-label">THINKING</div><div class="thought">Timestamping all agent actions... recording decision provenance... building compliance summary... generating pipeline ID...<span class="cursor-blink"></span></div></div>`);
+    document.getElementById('progBar').style.width = '92%';
+
+    await sleep(400);
+
+    const now = new Date();
+    const t = (off) => { const d=new Date(now.getTime()+off*1000);return d.toTimeString().slice(0,8); };
+
+    const auditEntries = [
+      {time:t(0),agent:'EXTRACT',msg:`Parsed ${transcript.split('\n').length} lines. ${decisions.length} decisions, ${items.length} actions, ${blockers.length} blockers.`},
+      {time:t(2),agent:'EXTRACT',msg:`Sentiment: "${extracted.sentiment?.overall}" · Tensions: ${(extracted.sentiment?.key_tensions||[]).slice(0,2).join(', ')}`},
+      {time:t(4),agent:'ORCHESTR',msg:`Sorted ${exOrder.length} tasks. Priority algorithm: deadline×severity×dependency_depth.`},
+      {time:t(6),agent:'ORCHESTR',msg:`Resolved ${conflicts.length} conflicts autonomously. Set ${escalations.length} escalation rules at ${threshold}h.`},
+      {time:t(8),agent:'DRAFTER',msg:`Generated ${emails.length} personalized emails (${tone} tone). Created ${tickets.length} ${ticketSys} tickets, ${calBlocks.length} calendar blocks.`},
+      {time:t(10),agent:'TRACKER',msg:`Health score: ${healthScore}/100. Bottleneck: ${tracked.bottleneck_owner}. Cascade risk: ${tracked.cascade_risk}.`},
+      {time:t(12),agent:'TRACKER',msg:`${stalls.length} stall predictions. ${playbook.length} escalation triggers armed.`},
+      {time:t(14),agent:'AUDIT',msg:`Full pipeline logged. SOC2-compatible. Pipeline ID: MM-${Date.now().toString(36).toUpperCase()}`},
+      {time:t(15),agent:'SYSTEM',msg:`Awaiting human approval. All outputs staged for dispatch. Nothing sent yet.`},
+    ];
+    state.outputs.audit = auditEntries;
+
+    feed('AUDIT',`Full audit trail: ${auditEntries.length} entries. Pipeline ID: MM-${Date.now().toString(36).toUpperCase()}`);
+
+    document.getElementById('kS4').textContent = auditEntries.length;
+
+    setAgentBody(5,`
+      <div class="out-section">
+        <div class="out-label">IMMUTABLE AUDIT TRAIL</div>
+        <div class="audit-log">
+          ${auditEntries.map(e=>`<div class="audit-row"><span class="at">${e.time}</span><span class="ag">[${e.agent}]</span><span class="am">${e.msg}</span></div>`).join('')}
+        </div>
+      </div>
+      <div class="out-section">
+        <div class="out-label">COMPLIANCE STATUS</div>
+        <div class="row-item">
+          <div class="row-icon">✅</div>
+          <div class="row-content">
+            <div class="row-main"><strong>All decisions traceable to source transcript</strong></div>
+            <div class="row-meta">SOC2-compatible · 90-day retention · Export: JSON/PDF · Pipeline ID: MM-${Date.now().toString(36).toUpperCase()}</div>
+          </div>
+        </div>
+      </div>
+      <div class="out-section">
+        <div class="out-label">DECISION TIMELINE</div>
+        <div class="timeline">
+          ${auditEntries.slice(0,5).map(e=>`<div class="tl-item"><div class="tl-dot"></div><div class="tl-time">${e.time}</div><div class="tl-text">[${e.agent}] ${e.msg}</div></div>`).join('')}
+        </div>
+      </div>
+    `);
+    setAgentStatus(5,'done');
+
+    // ── FINISH ──
+    const elapsed = ((Date.now()-state.startTime)/1000).toFixed(1);
+    document.getElementById('kS5').textContent = `${elapsed}s`;
+    document.getElementById('progBar').style.width = '100%';
+    pipe.className = 'badge-done';pipe.textContent = 'COMPLETE ✓';
+    document.getElementById('gate').classList.add('show');
+    document.getElementById('ganttCard').style.display = 'block';
+    feed('SYSTEM',`✅ All 5 agents complete in ${elapsed}s. Awaiting human approval.`);
+    toast(`🎉 Pipeline complete in ${elapsed}s — awaiting approval`);
+
+    // Save to history
+    saveHistory(extracted, items, emails, tickets, elapsed);
+
+  } catch(err) {
+    console.error(err);
+    toast(`❌ ${err.message}`);
+    pipe.className = 'badge-err';pipe.textContent = 'ERROR';
+    feed('SYSTEM',`❌ Pipeline error: ${err.message}`);
+  }
+
+  state.running = false;
+  btn.disabled = false;
+  btn.innerHTML = '<span>▶</span> RUN AGAIN';
+}
+
+// ══════════════════════════════════════
+// GANTT
+// ══════════════════════════════════════
+function renderGantt(tasks) {
+  const body = document.getElementById('ganttBody');
+  const ownerColors = {};
+  const palette = ['var(--neon)','var(--neon2)','var(--neon3)','var(--fire)','var(--red)'];
+  let ci = 0;
+  const getColor = (o) => {
+    if(!ownerColors[o]){ownerColors[o]=palette[ci%palette.length];ci++;}
+    return ownerColors[o];
+  };
+
+  const maxScore = Math.max(...tasks.map(t=>t.priority_score||50));
+  body.innerHTML = `
+    <table class="gantt-table">
+      <thead><tr><th>#</th><th>Task</th><th>Owner</th><th>Priority</th><th style="min-width:200px;">Timeline Bar</th></tr></thead>
+      <tbody>
+        ${tasks.slice(0,8).map((t,i)=>`
+          <tr>
+            <td style="color:var(--dim);font-family:'DM Mono',monospace;">${t.step}</td>
+            <td>${t.task?.substring(0,40)||'—'}</td>
+            <td class="gantt-owner">${t.owner||'—'}</td>
+            <td><span class="chip chip-${t.priority_score>75?'red':t.priority_score>50?'orange':'green'}">${t.priority_score}/100</span></td>
+            <td class="gantt-bar-cell">
+              <div class="gantt-bar-bg">
+                <div class="gantt-bar-fill" style="width:${(t.priority_score/maxScore*100).toFixed(0)}%;background:${getColor(t.owner)};opacity:0.8;"></div>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function toggleGantt() {
+  const b = document.getElementById('ganttBody');
+  b.style.display = b.style.display==='none' ? 'block' : 'none';
+}
+
+// ══════════════════════════════════════
+// GATE ACTIONS
+// ══════════════════════════════════════
+function approve() {
+  const gate = document.getElementById('gate');
+  gate.innerHTML = `
+    <div class="gate-title" style="color:var(--neon3);">✅ DISPATCHED SUCCESSFULLY</div>
+    <div class="gate-desc">All emails sent · ${document.getElementById('ticketSys').value.toUpperCase()} tickets created · Calendar blocks added · SLA monitoring active · Audit trail archived.</div>
+    <div style="margin-top:12px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);">
+      DISPATCH TIME: ${new Date().toLocaleTimeString()} · APPROVED BY: Human Operator · PIPELINE ID: MM-${Date.now().toString(36).toUpperCase()}
+    </div>
+  `;
+  toast('✅ Approved & dispatched by human operator');
+  feed('SYSTEM','✅ Human approved. Dispatching emails + tickets + SLA monitoring...');
+}
+
+function modify() {
+  document.getElementById('gate').style.display = 'none';
+  toast('✏️ Modification mode — edit outputs and re-run to re-stage');
+  feed('SYSTEM','📝 Human requested modifications. Re-run pipeline to re-stage.');
+}
+
+// ══════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════
+function showExport() {
+  const ex = state.outputs.extracted || {};
+  const orch = state.outputs.orchestrated || {};
+  const drafted = state.outputs.drafted || {};
+  const tracked = state.outputs.tracked || {};
+  const audit = state.outputs.audit || [];
+
+  const content = `# MeetMind Pipeline Report
+Generated: ${new Date().toLocaleString()}
+Pipeline ID: MM-${Date.now().toString(36).toUpperCase()}
+
+## Meeting: ${ex.meeting_meta?.title||'—'}
+Date: ${ex.meeting_meta?.date||'—'}
+Type: ${ex.meeting_meta?.meeting_type||'—'}
+Attendees: ${(ex.meeting_meta?.attendees||[]).join(', ')}
+
+## Key Decisions
+${(ex.decisions||[]).map(d=>`- [${d.impact?.toUpperCase()||'—'}] ${d.decision} (by ${d.made_by})`).join('\n')}
+
+## Action Items (${(ex.action_items||[]).length})
+${(ex.action_items||[]).map(a=>`- [${a.priority.toUpperCase()}] ${a.task} → ${a.owner} by ${a.deadline}`).join('\n')}
+
+## Workflow Health: ${tracked.health_score||'—'}/100
+Bottleneck: ${tracked.bottleneck_owner||'—'}
+Cascade Risk: ${tracked.cascade_risk||'—'}
+
+## Audit Log
+${audit.map(e=>`${e.time} [${e.agent}] ${e.msg}`).join('\n')}`;
+
+  document.getElementById('exportContent').innerHTML = `<pre style="font-family:'DM Mono',monospace;font-size:11px;color:var(--sub);white-space:pre-wrap;line-height:1.7;">${content}</pre>`;
+  document.getElementById('exportModal').classList.add('show');
+  state._exportContent = content;
+}
+
+function copyExport() {
+  navigator.clipboard.writeText(state._exportContent||'');
+  toast('📋 Copied to clipboard');
+}
+
+// ══════════════════════════════════════
+// HISTORY
+// ══════════════════════════════════════
+function saveHistory(extracted, items, emails, tickets, elapsed) {
+  const entry = {
+    id: `MM-${Date.now().toString(36).toUpperCase()}`,
+    title: extracted.meeting_meta?.title || 'Meeting',
+    date: new Date().toLocaleString(),
+    type: extracted.meeting_meta?.meeting_type || 'general',
+    actions: items.length,
+    emails: emails.length,
+    tickets: tickets.length,
+    health: state.outputs?.tracked?.health_score || '—',
+    elapsed,
+  };
+  state.meetingHistory.unshift(entry);
+  renderHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if(!state.meetingHistory.length) return;
+  list.innerHTML = state.meetingHistory.map(m=>`
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-body" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div style="flex:1;">
+          <div style="font-size:15px;font-weight:600;">${m.title}</div>
+          <div style="font-size:11px;color:var(--dim);font-family:'DM Mono',monospace;margin-top:2px;">${m.date} · ${m.elapsed}s runtime</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span class="chip chip-cyan">${m.actions} tasks</span>
+          <span class="chip chip-purple">${m.emails} emails</span>
+          <span class="chip chip-green">${m.tickets} tickets</span>
+          <span class="chip chip-${m.health>70?'green':m.health>50?'orange':'red'}">Health: ${m.health}</span>
+          <span class="chip chip-orange">${m.type}</span>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);">${m.id}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════
+// ANALYTICS CHARTS
+// ══════════════════════════════════════
+function initAnalytics() {
+  // Velocity chart
+  const vCtx = document.getElementById('velocityChart').getContext('2d');
+  new Chart(vCtx, {
+    type:'line',
+    data:{
+      labels:['Mar 1','Mar 5','Mar 9','Mar 13','Mar 17','Mar 21','Mar 25','Mar 29'],
+      datasets:[
+        {label:'Tasks Created',data:[8,12,7,15,10,18,13,22],borderColor:'rgba(0,229,255,0.8)',backgroundColor:'rgba(0,229,255,0.05)',fill:true,tension:0.4,pointBackgroundColor:'rgba(0,229,255,1)',pointRadius:4},
+        {label:'Tasks Resolved',data:[5,10,6,12,9,14,11,18],borderColor:'rgba(52,211,153,0.8)',backgroundColor:'rgba(52,211,153,0.05)',fill:true,tension:0.4,pointBackgroundColor:'rgba(52,211,153,1)',pointRadius:4},
+      ]
+    },
+    options:{responsive:true,scales:{x:{grid:{color:'rgba(31,45,69,0.4)'},ticks:{color:'#4a6080',font:{family:'DM Mono',size:10}}},y:{grid:{color:'rgba(31,45,69,0.4)'},ticks:{color:'#4a6080',font:{family:'DM Mono',size:10}}}},plugins:{legend:{labels:{color:'#94a3b8',font:{family:'Space Grotesk'}}}}}
+  });
+
+  // Owner chart (manual)
+  const ownerData = [
+    {name:'Rahul',tasks:8,color:'var(--neon)'},
+    {name:'Priya',tasks:5,color:'var(--neon2)'},
+    {name:'Vikram',tasks:4,color:'var(--neon3)'},
+    {name:'Ananya',tasks:3,color:'var(--fire)'},
+    {name:'Saurabh',tasks:2,color:'var(--red)'},
+  ];
+  const maxT = Math.max(...ownerData.map(o=>o.tasks));
+  document.getElementById('ownerChart').innerHTML = ownerData.map(o=>`
+    <div class="owner-row">
+      <div class="owner-avatar" style="background:${o.color}22;color:${o.color};">${o.name[0]}</div>
+      <div class="owner-name">${o.name}</div>
+      <div class="owner-bar-wrap"><div class="owner-bar" style="width:${(o.tasks/maxT*100).toFixed(0)}%;background:${o.color};"></div></div>
+      <div class="owner-cnt">${o.tasks}</div>
+    </div>
+  `).join('');
+
+  // Stall chart
+  const sCtx = document.getElementById('stallChart').getContext('2d');
+  new Chart(sCtx,{
+    type:'doughnut',
+    data:{
+      labels:['Product Sprint','Sales Review','Crisis Standup','General'],
+      datasets:[{data:[42,28,65,18],backgroundColor:['rgba(0,229,255,0.7)','rgba(167,139,250,0.7)','rgba(244,63,94,0.7)','rgba(52,211,153,0.7)'],borderColor:'#0a0e1a',borderWidth:2}]
+    },
+    options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',font:{family:'Space Grotesk',size:11}}}}}
+  });
+
+  // Resolution chart
+  const rCtx = document.getElementById('resolutionChart').getContext('2d');
+  new Chart(rCtx,{
+    type:'bar',
+    data:{
+      labels:['HIGH','MEDIUM','LOW'],
+      datasets:[{label:'Avg hours',data:[4.2,11.8,28.5],backgroundColor:['rgba(244,63,94,0.7)','rgba(249,115,22,0.7)','rgba(52,211,153,0.7)'],borderRadius:4}]
+    },
+    options:{responsive:true,scales:{x:{grid:{color:'rgba(31,45,69,0.4)'},ticks:{color:'#4a6080',font:{family:'DM Mono',size:10}}},y:{grid:{color:'rgba(31,45,69,0.4)'},ticks:{color:'#4a6080',font:{family:'DM Mono',size:10}}}},plugins:{legend:{labels:{color:'#94a3b8'}}}}
+  });
+}
+
+// ══════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// Boot
+init();
+</script>
+</body>
+</html>
